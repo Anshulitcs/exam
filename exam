@@ -1,510 +1,262 @@
-3s
-#include <iostream>
-#include <cstring>
-#include <unistd.h>
-#include <ctime>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
+#include<iostream>
+#include<string>
 using namespace std;
-
-#define MAXLINE 1024
-#define LISTENQ 5
-
-int main() {
-    int listenfd, connfd;
-    struct sockaddr_in servaddr;
-    char buff[MAXLINE];
-    time_t ticks;
-
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(12345);  // Daytime server port
-
-    if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        cerr << "Bind error" << endl;
-        return 1;
-    }
-
-    if (listen(listenfd, LISTENQ) < 0) {
-        cerr << "Listen error" << endl;
-        return 1;
-    }
-
-    cout << "Server is running and waiting for connections..." << endl;
-
-    while (true) {
-        connfd = accept(listenfd, (struct sockaddr *)NULL, NULL);
-        if (connfd < 0) {
-            cerr << "Accept error" << endl;
-            continue;
-        }
-
-        ticks = time(nullptr);
-        snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
-        write(connfd, buff, strlen(buff));
-        close(connfd);
-    }
-
-    return 0;
+int *computeFailFunction(const string&pattern, int *fail){
+	int m=pattern.size();
+	fail[0]=0;  //base case
+	int j=0;
+	int i=1;
+	
+	while(i<m){
+		if(pattern[i]==pattern[j]){
+			
+			fail[i]=j+1;
+			i++;
+			j++;
+		}
+	else if(j>0){
+		j=fail[j-1];
+	}	
+	else{
+		fail[j-1];
+		i++;
+	}	
 }
-3c
-#include <iostream>
-#include <cstring>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
+return fail;
+		
+	}
+	int KMPmatch(const string &text,const string& pattern){
+		
+	int n=text.size();
+	int m=pattern.size();
+	if(m==0){
+		return -1;     //If pattern empty no match possible
+	}	int * fail=new int[m];// allocate memory
+	computeFailFunction(pattern,fail);
+	int i=0;
+	int j=0;
+	while(i<n){
+		if(pattern[j]==text[i]){
+			if(j==m-1){
+				delete[]fail;
+				return i-m+1;
+			}
+			i++;
+			j++;
+		}
+		else if(j>0){
+			j=fail[j-1];
+		}else{
+			i++;
+		}
+	}
+		
+		delete[]fail;
+		return -1;
+	}
+	int main(){
+	string text,pattern;	
+	cout<<"enter the taext to be entered"<<endl;
+	cin>>text;
+	cout<<"enter the pattern to be entered"<<endl;
+	cin>>pattern;
+	int result=KMPmatch(text,pattern);
+	if(result!=-1){
+		cout<<"pattern found at index"<<result<<endl;
+		
+	}
+	else
+	cout<<"pattern not found"<<endl;
+		
+	return 0;	
+	}
+	---------------------------------------------
+	#include <iostream>
+ 
+#define I 32767  // Infinity
+#define V 7  // # of vertices in Graph
+#define E 9  // # of edges in Graph
+ 
 using namespace std;
-
-#define MAXLINE 1024
-
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        cerr << "Usage: ./tcpcli <Server-IP>" << endl;
-        return 1;
+ 
+void PrintMCST(int T[][V-1], int A[][E]){
+    cout << "\nMinimum Cost Spanning Tree Edges\n" << endl;
+    for (int i {0}; i<V-1; i++){
+        cout << "[" << T[0][i] << "]-----[" << T[1][i] << "]" << endl;
     }
-
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char buff[MAXLINE];
-
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(12345);  // Daytime server port
-
-    if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
-        cerr << "Invalid address or address not supported" << endl;
-        return 1;
-    }
-
-    if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        cerr << "Connection failed" << endl;
-        return 1;
-    }
-
-    int n = read(sockfd, buff, sizeof(buff) - 1);
-    if (n > 0) {
-        buff[n] = '\0';
-        cout << "Server time: " << buff << endl;
+    cout << endl;
+}
+ 
+// Set operations: Union and Find
+void Union(int u, int v, int s[]){
+    if (s[u] < s[v]){
+        s[u] += s[v];
+        s[v] = u;
     } else {
-        cerr << "Failed to read from server" << endl;
+        s[v] += s[u];
+        s[u] = v;
     }
-
-    close(sockfd);
-    return 0;
 }
-1s-----
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#define MAXLINE 1024
-#define LISTENQ 1024
-
-int main() {
-    int listenfd, connfd;
-    socklen_t len;
-    struct sockaddr_in servaddr, cliaddr;
-    char buff[MAXLINE];
-    ssize_t n;
-
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listenfd < 0) {
-        perror("Socket error");
-        exit(1);
-    }
-
-    std::memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(12345);  
-
  
-    if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Bind error");
-        exit(1);
+int Find(int u, int s[]){
+    int x = u;
+    int v = 0;
+ 
+    while (s[x] > 0){
+        x = s[x];
     }
-
-    if (listen(listenfd, LISTENQ) < 0) {
-        perror("Listen error");
-        exit(1);
+ 
+    while (u != x){
+        v = s[u];
+        s[u] = x;
+        u = v;
     }
-
-    std::cout << "Server is running and waiting for connections...\n";
-
-    for (;;) {
-        len = sizeof(cliaddr);
-
-        connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
-        if (connfd < 0) {
-            perror("Accept error");
-            exit(1);
-        }
-
-        std::cout << "Connection from " 
-                  << inet_ntoa(cliaddr.sin_addr) 
-                  << ", port " << ntohs(cliaddr.sin_port) << "\n";
-
-        while ((n = read(connfd, buff, MAXLINE)) > 0) {
-            write(connfd, buff, n);  
-        }
-
-        if (n == 0) {
-            std::cout << "Client disconnected.\n";
-        } else {
-            perror("Read error");
-        }
-
-        close(connfd);
-    }
-
-    return 0;
+    return x;
 }
-pr1c----
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#define MAXLINE 1024
-
+ 
+void KruskalsMCST(int A[3][9]){
+    int T[2][V-1];  // Solution array
+    int track[E] {0};  // Track edges that are included in solution
+    int set[V+1] = {-1, -1, -1, -1, -1, -1, -1, -1};  // Array for finding cycle
+ 
+    int i {0};
+    while (i < V-1){
+        int min = I;
+        int u {0};
+        int v {0};
+        int k {0};
+ 
+        // Find a minimum cost edge
+        for (int j {0}; j<E; j++){
+            if (track[j] == 0 && A[2][j] < min){
+                min = A[2][j];
+                u = A[0][j];
+                v = A[1][j];
+                k = j;
+            }
+        }
+ 
+        // Check if the selected min cost edge (u, v) forming a cycle or not
+        if (Find(u, set) != Find(v, set)){
+            T[0][i] = u;
+            T[1][i] = v;
+ 
+            // Perform union
+            Union(Find(u, set), Find(v, set), set);
+            i++;
+        }
+        track[k] = 1;
+    }
+ 
+    PrintMCST(T, A);
+}
+ 
 int main() {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char buff[MAXLINE];
-    ssize_t n;
-
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        perror("Socket error");
-        exit(1);
-    }
-
-    std::memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(12345);  
-
-    if (inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr) <= 0) {
-        perror("Inet_pton error");
-        exit(1);
-    }
-
-    if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Connect error");
-        exit(1);
-    }
-
-    std::cout << "Connected to the server. Type 'exit' to quit.\n";
-
-    while (true) {
-        std::cout << "Enter message: ";
-        if (!std::cin.getline(buff, MAXLINE)) {
-            break;
-        }
-
-        if (strncmp(buff, "exit", 4) == 0) {
-            break;
-        }
-
-        write(sockfd, buff, strlen(buff));
-
-        n = read(sockfd, buff, MAXLINE);
-        if (n > 0) {
-            std::cout << "Echo from server: " << std::string(buff, n) << "\n";
-        } else {
-            perror("Read error");
-            break;
-        }
-    }
-
-    close(sockfd);
+    int edges[3][9] = {{ 1, 1,  2,  2, 3,  4,  4,  5,  5},
+                       { 2, 6,  3,  7, 4,  5,  7,  6,  7},
+                       {25, 5, 12, 10, 8, 16, 14, 20, 18}};
+ 
+    KruskalsMCST(edges);
+ 
     return 0;
 }
-2s
-----#include <iostream>
-#include <cstring>      
-#include <sys/types.h>  
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <unistd.h>     
-#include <arpa/inet.h>
-
+	
+	--------------------
+#include <iostream>
+#include <string>
+#include <vector>
 using namespace std;
 
-#define MAXLINE 4096  
-#define SERV_PORT 3000 
-#define LISTENQ 8     
+#define ALPHA_SIZE 27
 
-int main(int argc, char** argv) {
-    int listenfd, connfd, n;
-    pid_t childpid;
-    socklen_t clilen;
-    char buf[MAXLINE];
-    struct sockaddr_in cliaddr, servaddr;
+class STreeNode {
+public:
+    STreeNode* children[ALPHA_SIZE];
 
-    
-    if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        cerr << "Error: Problem in creating the socket" << endl;
-        exit(2);
-    }
-
-    
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(SERV_PORT);
-
-    
-    if (bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        cerr << "Error: Problem in binding the socket" << endl;
-        exit(3);
-    }
-
- 
-    if (listen(listenfd, LISTENQ) < 0) {
-        cerr << "Error: Problem in listening on the socket" << endl;
-        exit(4);
-    }
-
-    cout << "Server running...waiting for connections." << endl;
-
-  
-    for (;;) {
-        clilen = sizeof(cliaddr);
-
-       
-        if ((connfd = accept(listenfd, (struct sockaddr*)&cliaddr, &clilen)) < 0) {
-            cerr << "Error: Problem in accepting the connection" << endl;
-            continue;
+    STreeNode() {
+        for (int i = 0; i < ALPHA_SIZE; i++) {
+            children[i] = NULL;
         }
+    }
 
-        cout << "Received request..." << endl;
+    ~STreeNode() {
+        for (int i = 0; i < ALPHA_SIZE; i++) {
+            delete children[i];
+        }
+    }
+};
 
-        
-        if ((childpid = fork()) == 0) {
-            cout << "Child created to handle client requests." << endl;
+class STree {
+private:
+    STreeNode* root;
+    string text;
 
-            
-            close(listenfd);
+public:
+    STree(const string& text) {
+        this->text = text + "$";
+        root = new STreeNode();
+        BuildSTree();
+    }
 
-            
-            while ((n = recv(connfd, buf, MAXLINE, 0)) > 0) {
-                cout << "String received from and sent to the client: " << buf << endl;
-                send(connfd, buf, n, 0);
-                memset(buf, 0, MAXLINE); 
+    ~STree() {
+        delete root;
+    }
+
+    int charToIndex(char c) {
+        if (c == '$') return 26;
+        return c - 'a';
+    }
+
+    void BuildSTree() {
+        int n = text.length();
+        for (int i = n - 1; i >= 0; i--) {
+            STreeNode* currNode = root;
+            int j = i;
+
+            while (j < n && currNode->children[charToIndex(text[j])] != NULL) {
+                currNode = currNode->children[charToIndex(text[j])];
+                j++;
             }
 
-            if (n < 0) {
-                cerr << "Error: Read error" << endl;
+            for (int k = j; k < n; k++) {
+                STreeNode* newNode = new STreeNode();
+                currNode->children[charToIndex(text[k])] = newNode;
+                currNode = newNode;
             }
-
-            close(connfd); 
-            exit(0);       
         }
-
-       
-        close(connfd);
     }
 
-    return 0;
-}
-2c----
-#include <iostream>
-#include <cstring>      
-#include <sys/types.h>  
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <arpa/inet.h>  
-#include <unistd.h>   
-
-using namespace std;
-
-#define MAXLINE 4096 
-#define SERV_PORT 3000 
-
-int main(int argc, char** argv) {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char sendline[MAXLINE], recvline[MAXLINE];
-
- 
-    if (argc != 2) {
-        cerr << "Usage: TCPClient <IP address of the server>" << endl;
-        exit(1);
+    void displaySuffixTree() {
+        vector<char> path;
+        displayHelper(root, path);
     }
 
-    
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("Error in creating the socket");
-        exit(2);
-    }
-
-   
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(argv[1]); 
-    servaddr.sin_port = htons(SERV_PORT); 
-
-    
-    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Error in connecting to the server");
-        exit(3);
-    }
-
-    cout << "Connected to the server. Type your message and press Enter:" << endl;
-
-    
-    while (cin.getline(sendline, MAXLINE)) {
-        
-        send(sockfd, sendline, strlen(sendline), 0);
-
-        
-        if (recv(sockfd, recvline, MAXLINE, 0) == 0) {
-            cerr << "Error: Server terminated prematurely" << endl;
-            exit(4);
+private:
+    void displayHelper(STreeNode* node, vector<char>& path) {
+        bool isLeaf = true;
+        for (int i = 0; i < ALPHA_SIZE; i++) {
+            if (node->children[i] != NULL) {
+                isLeaf = false;
+                path.push_back(i == 26 ? '$' : 'a' + i);
+                displayHelper(node->children[i], path);
+                path.pop_back();
+            }
         }
-
-        
-        cout << "String received from the server: " << recvline << endl;
+        if (isLeaf) {
+            for (int i = 0; i < path.size(); i++) {
+                cout << path[i];
+            }
+            cout << endl;
+        }
     }
-
-    close(sockfd); 
-    return 0;
-}
-4s---
-#include <iostream>
-#include <cstring>
-#include <ctime>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-
-using namespace std;
-
-#define MAXLINE 4096
-#define SERV_PORT 12345
-#define LISTENQ 8
-
-void handle_client(int connfd) {
-    char buff[MAXLINE];
-    time_t ticks = time(nullptr);
-    snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
-    write(connfd, buff, strlen(buff));
-    close(connfd);
-}
+};
 
 int main() {
-    int listenfd, connfd;
-    pid_t childpid;
-    socklen_t clilen;
-    struct sockaddr_in cliaddr, servaddr;
-
-    if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        cerr << "Error: Problem in creating the socket" << endl;
-        exit(2);
-    }
-
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(SERV_PORT);
-
-    if (bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        cerr << "Error: Problem in binding the socket" << endl;
-        exit(3);
-    }
-
-    if (listen(listenfd, LISTENQ) < 0) {
-        cerr << "Error: Problem in listening on the socket" << endl;
-        exit(4);
-    }
-
-    cout << "Server running...waiting for connections." << endl;
-
-    for (;;) {
-        clilen = sizeof(cliaddr);
-
-        if ((connfd = accept(listenfd, (struct sockaddr*)&cliaddr, &clilen)) < 0) {
-            cerr << "Error: Problem in accepting the connection" << endl;
-            continue;
-        }
-
-        cout << "Received request..." << endl;
-
-        if ((childpid = fork()) == 0) {
-            cout << "Child created to handle client requests." << endl;
-            close(listenfd);
-            handle_client(connfd);
-            exit(0);
-        }
-
-        close(connfd);
-    }
-
+    STree st("banana");
+    cout << "Suffix tree for 'banana':\n";
+    st.displaySuffixTree();
     return 0;
 }
-4c---
-#include <iostream>
-#include <cstring>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
-using namespace std;
-
-#define MAXLINE 4096
-#define SERV_PORT 12345
-
-int main(int argc, char** argv) {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    char recvline[MAXLINE];
-
-    if (argc != 2) {
-        cerr << "Usage: TCPClient <IP address of the server>" << endl;
-        exit(1);
-    }
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        cerr << "Error: Problem in creating the socket" << endl;
-        exit(2);
-    }
-
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(argv[1]);
-    servaddr.sin_port = htons(SERV_PORT);
-
-    if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        cerr << "Error: Problem in connecting to the server" << endl;
-        exit(3);
-    }
-
-    if (recv(sockfd, recvline, MAXLINE, 0) == 0) {
-        cerr << "Error: Server terminated prematurely" << endl;
-        exit(4);
-    }
-
-    cout << "Received from the server: " << recvline << endl;
-
-    close(sockfd);
-    return 0;
-}
-
+	
+	
+	
